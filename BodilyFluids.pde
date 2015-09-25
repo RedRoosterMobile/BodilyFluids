@@ -44,6 +44,7 @@ final float FLUID_WIDTH = 120;
 
 float invWidth, invHeight;    // inverse of screen dimensions
 float aspectRatio, aspectRatio2;
+float xtionScreenFactorX,xtionScreenFactorY;
 
 MSAFluidSolver2D fluidSolver;
 
@@ -61,7 +62,7 @@ import java.util.Iterator;
 import SimpleOpenNI.*;
 
 SimpleOpenNI context;
-int handVecListSize = 20;
+int handVecListSize = 10;
 Map<Integer,ArrayList<PVector>>  handPathList = new HashMap<Integer,ArrayList<PVector>>();
 color[]       userClr = new color[]{ color(255,0,0),
                                      color(0,255,0),
@@ -72,10 +73,15 @@ color[]       userClr = new color[]{ color(255,0,0),
                                    };
 
 void setup() {
-    //size(960, 640, P3D);    // use OPENGL rendering for bilinear filtering on texture
+  int widthX= 960;
+  int heightY=640;
+    size(widthX, heightY, P3D);    // use OPENGL rendering for bilinear filtering on texture
 //    size(screen.width * 49/50, screen.height * 49/50, OPENGL);
    // hint( ENABLE_OPENGL_4X_SMOOTH );    // Turn on 4X antialiasing
-    size(640,480,P3D);
+    //size(640,480,P3D);
+    xtionScreenFactorX = widthX / 640;
+    xtionScreenFactorY = heightY / 480;
+    
     invWidth = 1.0f/width;
     invHeight = 1.0f/height;
     aspectRatio = width * invHeight;
@@ -112,6 +118,7 @@ void setup() {
   // enable hands + gesture generation
   //context.enableGesture();
   context.enableHand();
+  // GESTURE_CLICK, GESTURE_HAND_RAISE, GESTURE_WAVE
   context.startGesture(SimpleOpenNI.GESTURE_WAVE);
   
   // set how smooth the hand capturing should be
@@ -120,6 +127,10 @@ void setup() {
 
 
 void mouseMoved() {
+    println("invWidth:");
+    println(invWidth);
+   
+   println("mouseX:");println(mouseX); 
     float mouseNormX = mouseX * invWidth;
     float mouseNormY = mouseY * invHeight;
     float mouseVelX = (mouseX - pmouseX) * invWidth;
@@ -129,7 +140,6 @@ void mouseMoved() {
 }
 
 void handMoved(PVector pos, PVector prevPos) {
-    //
     
     // convert coords to real x and y
     PVector p2dPos = new PVector();
@@ -137,12 +147,28 @@ void handMoved(PVector pos, PVector prevPos) {
     context.convertRealWorldToProjective(pos,p2dPos);
     context.convertRealWorldToProjective(prevPos,p2dPrev);
     
-    float mouseNormX = p2dPos.x * invWidth;
-    float mouseNormY = p2dPos.y * invHeight;
+    // set to current screen-size ()
+    p2dPos.x = p2dPos.x* 960/640;
+    p2dPos.y = p2dPos.y* 640/480;
+    
+    p2dPrev.x = p2dPrev.x* 960/640;
+    p2dPrev.y = p2dPrev.y* 640/480;
+    
+    
+    //p2dPos = translateToScreenSize(p2dPos);
+    //p2dPrev = translateToScreenSize(p2dPrev);
+    
+    float mouseNormX = (p2dPos.x * invWidth);
+    float mouseNormY = (p2dPos.y * invHeight);
     float mouseVelX = (p2dPos.x - p2dPrev.x) * invWidth;
     float mouseVelY = ((p2dPos.y) - (p2dPrev.y)) * invHeight;
 
     addForce(mouseNormX, mouseNormY, mouseVelX, mouseVelY);
+}
+PVector translateToScreenSize(PVector p) {
+  p.x = p.x * xtionScreenFactorX;
+  p.y = p.y * xtionScreenFactorY;
+  return p;
 }
 
 // -----------------------------------------------------------------
@@ -167,7 +193,7 @@ void onTrackedHand(SimpleOpenNI curContext,int handId,PVector pos)
   {
     vecList.add(0,pos);
     if (vecList.size()>1) {
-      handMoved(pos,(PVector) vecList.get(vecList.size()-1));
+      handMoved(pos,(PVector) vecList.get(vecList.size()-2));
     } else {
       handMoved(pos,pos);
     }
@@ -225,6 +251,7 @@ void draw() {
             p = (PVector) itrVec.next(); 
             
             context.convertRealWorldToProjective(p,p2d);
+            // todo: convert to real screen size
             vertex(p2d.x,p2d.y);
           }
         endShape();   
@@ -233,6 +260,7 @@ void draw() {
         strokeWeight(4);
         p = vecList.get(0);
         context.convertRealWorldToProjective(p,p2d);
+        // todo: convert to real screen size
         point(p2d.x,p2d.y);
  
     }        
