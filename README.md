@@ -1,5 +1,5 @@
 # BodilyFluids
-hand tracking and to stir up the fluid soup
+hand tracking to stir up the fluid soup
 
 ## Framework
 
